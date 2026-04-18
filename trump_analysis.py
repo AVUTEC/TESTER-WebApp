@@ -76,9 +76,12 @@ def baseline_stats(prices: pd.Series, horizons=(1, 3, 5, 10)) -> dict:
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--events", default="trump_events.csv")
+    ap.add_argument("--ticker", default="MSE.PA",
+                    help="MSE.PA (Euro Stoxx 50), SPY (S&P 500), QQQ (Nasdaq 100)")
     args = ap.parse_args()
 
-    prices = load_prices()
+    prices = load_prices(ticker=args.ticker)
+    print(f"[ticker] {args.ticker}")
     events = pd.read_csv(args.events)
     print(f"[data] {len(prices)} koers-dagen, {len(events)} events")
     print(f"       periode koers: {prices.index[0].date()} -> {prices.index[-1].date()}")

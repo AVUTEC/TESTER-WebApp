@@ -19,7 +19,14 @@ def load_prices(
     if csv_path is not None:
         return _from_csv(Path(csv_path))
 
-    local = Path(__file__).parent / "prices.csv"
+    # Map ticker -> lokaal CSV
+    local_map = {
+        "SPY": "prices_spy.csv",
+        "^GSPC": "prices_spy.csv",
+        "QQQ": "prices_qqq.csv",
+    }
+    local_name = local_map.get(ticker, "prices.csv")
+    local = Path(__file__).parent / local_name
     if local.exists():
         s = _from_csv(local)
         if start:
