@@ -24,6 +24,12 @@ def load_prices(
         "SPY": "prices_spy.csv",
         "^GSPC": "prices_spy.csv",
         "QQQ": "prices_qqq.csv",
+        "VWCE": "prices_vwce.csv",
+        "VWCE.DE": "prices_vwce.csv",
+        "BANKS": "prices_banks.csv",
+        "EXV1.DE": "prices_banks.csv",
+        "DEFENSE": "prices_defense.csv",
+        "DFEN.DE": "prices_defense.csv",
     }
     local_name = local_map.get(ticker, "prices.csv")
     local = Path(__file__).parent / local_name

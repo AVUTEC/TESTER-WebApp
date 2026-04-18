@@ -37,6 +37,9 @@ jobs:
               ('prices.csv', ['MSE.PA', 'MSE.MI', 'LYSX.DE', 'LYSX.F']),   # Euro Stoxx 50 ETF
               ('prices_spy.csv', ['SPY']),                                  # S&P 500 ETF (USD)
               ('prices_qqq.csv', ['QQQ']),                                  # Nasdaq 100 ETF (USD)
+              ('prices_vwce.csv', ['VWCE.DE', 'VWCE.F', 'VWRA.L']),        # FTSE All-World (wereldwijd)
+              ('prices_banks.csv', ['EXV1.DE', 'SX7PEX.DE']),               # STOXX Europe 600 Banks
+              ('prices_defense.csv', ['DFEN.DE', 'DFND.L', 'NATO.L']),      # Defense / Aerospace
           ]
 
           for out_name, tickers in targets:
@@ -67,7 +70,7 @@ jobs:
         run: |
           git config user.name  "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add prices.csv prices_spy.csv prices_qqq.csv 2>/dev/null || true
+          git add prices.csv prices_spy.csv prices_qqq.csv prices_vwce.csv prices_banks.csv prices_defense.csv 2>/dev/null || true
           git diff --cached --quiet && echo "geen wijzigingen" && exit 0
           git commit -m "data: refresh prices via Actions"
           git push
