@@ -1,0 +1,65 @@
+name: Refresh prices.csv
+
+on:
+  workflow_dispatch:
+    inputs:
+      start:
+        description: 'Startdatum (YYYY-MM-DD)'
+        default: '2010-01-01'
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install --quiet yfinance pandas
+
+      - name: Fetch prices
+        env:
+          START: ${{ inputs.start }}
+        run: |
+          python - <<'PY'
+          import os, pandas as pd, yfinance as yf
+
+          tickers = ['MSE.PA', 'MSE.MI', 'LYSX.DE', 'LYSX.F']
+          start = os.environ['START']
+
+          for t in tickers:
+              df = yf.download(t, start=start, auto_adjust=True, progress=False)
+              if df is None or df.empty:
+                  print(f'{t}: geen data')
+                  continue
+              close = df['Close']
+              if isinstance(close, pd.DataFrame):
+                  close = close.iloc[:, 0]
+              close = close.dropna()
+              if not len(close):
+                  continue
+              out = close.rename('Close').reset_index()
+              out.columns = ['Date', 'Close']
+              out['Date'] = pd.to_datetime(out['Date']).dt.strftime('%Y-%m-%d')
+              out.to_csv('prices.csv', index=False)
+              print(f'{t}: {len(out)} rijen geschreven')
+              break
+          else:
+              raise SystemExit('Geen ticker gaf data')
+          PY
+
+      - name: Commit
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add prices.csv
+          git diff --cached --quiet && echo "geen wijzigingen" && exit 0
+          git commit -m "data: refresh prices.csv via Actions"
+          git push
