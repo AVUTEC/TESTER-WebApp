@@ -13,35 +13,37 @@ def load_prices(
 ) -> pd.Series:
     """Return een pandas Series van slotkoersen (index = datum).
 
-    Probeert eerst yfinance; als dat niet lukt (of als `csv_path` is opgegeven),
-    valt het terug op een lokale CSV met kolommen Date,Close.
+    Voorkeur: lokale `prices.csv` (door fetch_data.ipynb in Colab gecommit).
+    Anders: yfinance. Of een expliciete `csv_path`.
     """
     if csv_path is not None:
         return _from_csv(Path(csv_path))
 
-    try:
-        import yfinance as yf
+    local = Path(__file__).parent / "prices.csv"
+    if local.exists():
+        s = _from_csv(local)
+        if start:
+            s = s.loc[s.index >= pd.Timestamp(start)]
+        if end:
+            s = s.loc[s.index <= pd.Timestamp(end)]
+        return s
 
-        df = yf.download(
-            ticker,
-            start=start,
-            end=end,
-            auto_adjust=True,
-            progress=False,
-        )
-        if df is None or df.empty:
-            raise RuntimeError(f"Geen data terug van yfinance voor {ticker}")
-        close = df["Close"]
-        if isinstance(close, pd.DataFrame):
-            close = close.iloc[:, 0]
-        close.name = ticker
-        return close.dropna()
-    except Exception as exc:
-        fallback = Path(__file__).parent / "prices.csv"
-        if fallback.exists():
-            print(f"[data] yfinance faalde ({exc}); gebruik {fallback}")
-            return _from_csv(fallback)
-        raise
+    import yfinance as yf
+
+    df = yf.download(
+        ticker,
+        start=start,
+        end=end,
+        auto_adjust=True,
+        progress=False,
+    )
+    if df is None or df.empty:
+        raise RuntimeError(f"Geen data terug van yfinance voor {ticker}")
+    close = df["Close"]
+    if isinstance(close, pd.DataFrame):
+        close = close.iloc[:, 0]
+    close.name = ticker
+    return close.dropna()
 
 
 def _from_csv(path: Path) -> pd.Series:
