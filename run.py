@@ -26,7 +26,7 @@ def _fmt_row(r: SimResult) -> str:
 
 def main() -> None:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--ticker", default="LYSX.PA")
+    parser.add_argument("--ticker", default="MSE.PA")
     parser.add_argument("--start", default="2010-01-01")
     parser.add_argument("--end", default=None)
     parser.add_argument("--csv", default=None, help="lokale CSV in plaats van yfinance")

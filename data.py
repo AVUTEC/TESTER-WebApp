@@ -6,7 +6,7 @@ import pandas as pd
 
 
 def load_prices(
-    ticker: str = "LYSX.PA",
+    ticker: str = "MSE.PA",
     start: str = "2010-01-01",
     end: str | None = None,
     csv_path: str | Path | None = None,
