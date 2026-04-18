@@ -214,3 +214,110 @@ def overreaction(
         positions=pd.Series(pos, index=idx),
         trades=trades,
     )
+
+
+def _annualized_vol(returns: np.ndarray, window: int) -> np.ndarray:
+    """Realized volatility geannualiseerd (std * sqrt(252))."""
+    n = len(returns)
+    vol = np.full(n, np.nan)
+    for i in range(window, n):
+        vol[i] = returns[i - window:i].std(ddof=1) * np.sqrt(TRADING_DAYS_PER_YEAR)
+    return vol
+
+
+def regime_overreaction(
+    prices: pd.Series,
+    start_capital: float = 10_000.0,
+    sell_threshold: float = 0.03,
+    buy_threshold: float = -0.025,
+    cash_rate_annual: float = 0.01,
+    fee_rate: float = 0.0,
+    gate: str = "vol",               # 'vol' of 'drawdown'
+    vol_window: int = 20,
+    vol_threshold: float = 0.18,      # geannualiseerd
+    drawdown_threshold: float = 0.05, # >5% onder recente piek
+    force_reentry_after_days: int = 0,  # 0 = uitgeschakeld; >0 = herintreden als N dagen niks gebeurt
+) -> SimResult:
+    """Overreactie-regels maar alleen actief wanneer markt-regime het toelaat.
+    Buiten het regime: gewoon belegd blijven (geen signaal = B&H).
+    Als de strategie in cash staat wanneer 't regime 'uit' gaat, herinvesteert ze direct.
+    """
+    daily_cash_factor = (1 + cash_rate_annual) ** (1 / TRADING_DAYS_PER_YEAR)
+
+    p = prices.values
+    idx = prices.index
+    rets = np.concatenate(([0.0], p[1:] / p[:-1] - 1))
+
+    if gate == "vol":
+        vol = _annualized_vol(rets, vol_window)
+        active = vol >= vol_threshold
+    elif gate == "drawdown":
+        running_peak = np.maximum.accumulate(p)
+        dd = p / running_peak - 1
+        active = dd <= -drawdown_threshold
+    else:
+        raise ValueError(f"Onbekende gate: {gate}")
+
+    invested = True
+    invested_amount = start_capital / (1 + fee_rate)
+    shares = invested_amount / p[0]
+    cash = 0.0
+    days_in_cash = 0
+
+    equity = np.empty(len(p))
+    pos = np.empty(len(p), dtype=np.int8)
+    trades = 1
+
+    for i in range(len(p)):
+        if not invested:
+            cash *= daily_cash_factor
+            days_in_cash += 1
+        else:
+            days_in_cash = 0
+
+        if i > 0:
+            day_ret = rets[i]
+            regime_on = bool(active[i]) if not np.isnan(active[i] if active.dtype != bool else float(active[i])) else False
+            # active array is bool already; use directly
+            regime_on = bool(active[i])
+
+            if regime_on:
+                if invested and day_ret >= sell_threshold:
+                    cash = shares * p[i] * (1 - fee_rate)
+                    shares = 0.0
+                    invested = False
+                    days_in_cash = 0
+                    trades += 1
+                elif not invested and day_ret <= buy_threshold:
+                    shares = (cash / (1 + fee_rate)) / p[i]
+                    cash = 0.0
+                    invested = True
+                    trades += 1
+            else:
+                # Regime uit: we willen belegd zijn. Als in cash, stap direct in.
+                if not invested:
+                    shares = (cash / (1 + fee_rate)) / p[i]
+                    cash = 0.0
+                    invested = True
+                    trades += 1
+
+            # Veiligheidsnet: te lang in cash? Herintreden.
+            if (not invested) and force_reentry_after_days > 0 and days_in_cash >= force_reentry_after_days:
+                shares = (cash / (1 + fee_rate)) / p[i]
+                cash = 0.0
+                invested = True
+                trades += 1
+
+        equity[i] = shares * p[i] + cash
+        pos[i] = 1 if invested else 0
+
+    gate_desc = (
+        f"vol>={vol_threshold*100:.0f}%" if gate == "vol"
+        else f"DD<=-{drawdown_threshold*100:.0f}%"
+    )
+    return SimResult(
+        name=f"Regime({gate_desc}) sell>+{sell_threshold*100:.1f}% buy<{buy_threshold*100:.1f}%",
+        equity=pd.Series(equity, index=idx),
+        positions=pd.Series(pos, index=idx),
+        trades=trades,
+    )
