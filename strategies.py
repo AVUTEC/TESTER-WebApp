@@ -216,6 +216,74 @@ def overreaction(
     )
 
 
+def take_profit_then_wait(
+    prices: pd.Series,
+    start_capital: float = 10_000.0,
+    sell_threshold: float = 0.05,         # verkoop bij +5% boven laatste koopprijs
+    wait_days: int = 5,                   # ~1 week handelsdagen
+    cash_rate_annual: float = 0.01,
+    fee_rate: float = 0.0,
+    reference: str = "last_buy",          # 'last_buy' of 'single_day'
+) -> SimResult:
+    """Profit-take + vaste cooldown.
+
+    reference='last_buy':   verkoop zodra koers >= (1 + sell_th) * laatste_koopprijs
+    reference='single_day': verkoop zodra dag-return >= sell_th
+    Na verkoop: wacht `wait_days` handelsdagen en koop daarna onvoorwaardelijk terug.
+    """
+    daily_cash_factor = (1 + cash_rate_annual) ** (1 / TRADING_DAYS_PER_YEAR)
+
+    p = prices.values
+    idx = prices.index
+
+    invested = True
+    invested_amount = start_capital / (1 + fee_rate)
+    shares = invested_amount / p[0]
+    cash = 0.0
+    last_buy = p[0]
+    days_in_cash = 0
+
+    equity = np.empty(len(p))
+    pos = np.empty(len(p), dtype=np.int8)
+    trades = 1
+
+    for i in range(len(p)):
+        if not invested:
+            cash *= daily_cash_factor
+            days_in_cash += 1
+        else:
+            days_in_cash = 0
+
+        if invested and i > 0:
+            if reference == "last_buy":
+                triggered = p[i] >= last_buy * (1 + sell_threshold)
+            else:
+                triggered = (p[i] / p[i - 1] - 1) >= sell_threshold
+            if triggered:
+                cash = shares * p[i] * (1 - fee_rate)
+                shares = 0.0
+                invested = False
+                days_in_cash = 0
+                trades += 1
+        elif not invested and days_in_cash >= wait_days:
+            shares = (cash / (1 + fee_rate)) / p[i]
+            cash = 0.0
+            invested = True
+            last_buy = p[i]
+            trades += 1
+
+        equity[i] = shares * p[i] + cash
+        pos[i] = 1 if invested else 0
+
+    ref_label = "vs laatste buy" if reference == "last_buy" else "single day"
+    return SimResult(
+        name=f"TakeProfit+{sell_threshold*100:.1f}% ({ref_label}), wacht {wait_days}d",
+        equity=pd.Series(equity, index=idx),
+        positions=pd.Series(pos, index=idx),
+        trades=trades,
+    )
+
+
 def _annualized_vol(returns: np.ndarray, window: int) -> np.ndarray:
     """Realized volatility geannualiseerd (std * sqrt(252))."""
     n = len(returns)
