@@ -1,0 +1,16 @@
+date,event_time_et,sentiment,description,source
+2025-01-20,12:00,neutral,"Inauguration day; generic tariff talk",inauguration
+2025-02-01,17:00,bearish,"25% tariffs op Canada en Mexico, 10% op China aangekondigd (ging tijdelijk door)",truth_social
+2025-02-03,10:00,bullish,"30-daagse pauze op tariefs tegen Canada en Mexico aangekondigd",truth_social
+2025-02-10,14:00,bearish,"25% tariefs op alle staal en aluminium imports",truth_social
+2025-03-04,00:00,bearish,"Tariefs op Canada/Mexico/China van kracht",executive_order
+2025-03-06,15:00,bullish,"Uitstel tariefs op USMCA-producten Canada/Mexico tot 2 april",truth_social
+2025-04-02,16:00,very_bearish,"Liberation Day: 10% universeel + hogere reciprocal tariefs voor 57 landen",rose_garden
+2025-04-07,09:30,bearish,"Geen backdown: 'markten moeten medicijn slikken'",truth_social
+2025-04-09,09:33,bullish,"'THIS IS A GREAT TIME TO BUY!!' post",truth_social
+2025-04-09,13:18,very_bullish,"90-daagse pauze op reciprocal tariefs aangekondigd (behalve China); S&P +9.5%",truth_social
+2025-04-21,08:00,bearish,"Trump noemt Powell 'loser', bedreigt Fed-onafhankelijkheid",truth_social
+2025-04-22,14:00,bullish,"Trump zegt 'geen plannen om Powell te ontslaan'",press
+2025-05-12,00:00,bullish,"US-China 90-daagse tariefpauze deal (China-tariefs tijdelijk van 145% naar 30%)",joint_statement
+2025-07-07,12:00,bearish,"Brieven aan 14 landen met nieuwe tariefs aangekondigd",truth_social
+2025-08-07,00:00,bearish,"Nieuwe tariefs van kracht voor ~70 landen",executive_order
