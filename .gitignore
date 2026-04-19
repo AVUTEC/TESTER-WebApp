@@ -1,0 +1,8 @@
+__pycache__/
+*.pyc
+.venv/
+.ipynb_checkpoints/
+
+# Large raw downloads — regenerate via scripts/pull_*.py
+data/raw/vdem.RData
+data/raw/vparty.RData
